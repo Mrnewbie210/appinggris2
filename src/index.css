@@ -1,0 +1,67 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Nunito:wght@400;600;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Poppins", "Nunito", "Segoe UI", Roboto, ui-sans-serif, system-ui, sans-serif;
+
+  --color-mint: #A8D5BA;
+  --color-warm-white: #FAFAF8;
+  --color-peach: #FFE5D9;
+  --color-sage: #C8D8C8;
+  --color-charcoal: #2D2D2D;
+  --color-secondary: #5C5C5C;
+
+  --radius-xl: 1.5rem;
+  --radius-2xl: 2rem;
+  --shadow-soft: 0 4px 15px rgba(0, 0, 0, 0.05);
+}
+
+@layer base {
+  body {
+    @apply bg-warm-white text-charcoal font-sans antialiased;
+  }
+}
+
+@layer components {
+  .custom-shadow {
+    box-shadow: var(--shadow-soft);
+  }
+
+  .card-base {
+    @apply bg-white rounded-[24px] p-6 border border-[#F0F0F0];
+    box-shadow: var(--shadow-soft);
+  }
+
+  .soft-gradient {
+    background: linear-gradient(90deg, var(--color-mint) 0%, var(--color-sage) 100%);
+  }
+
+  .quote-box {
+    @apply p-5 border-l-4 border-peach bg-[#FFF9F7] rounded-r-2xl italic text-secondary text-sm leading-relaxed;
+  }
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.perspective-1000 {
+  perspective: 1000px;
+}
+
+.preserve-3d {
+  transform-style: preserve-3d;
+}
+
+.backface-hidden {
+  backface-visibility: hidden;
+}
+
+.rotate-y-180 {
+  transform: rotateY(180deg);
+}
