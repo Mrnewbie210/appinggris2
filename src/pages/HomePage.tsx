@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { Check, Flame, Sparkles, Target } from 'lucide-react';
 import { Card } from '../components/ui/Card';
@@ -22,7 +22,7 @@ const DEFAULT_TASKS: Task[] = [
   { id: 'reading', title: 'Reading', status: 'pending' },
 ];
 
-export default function HomePage({ onNavigate }: { onNavigate?: (page: any) => void }) {
+export default function HomePage({ onNavigate, key }: { onNavigate?: (page: any) => void, key?: React.Key }) {
   const [tasks, setTasks] = useState<Task[]>(DEFAULT_TASKS);
   const [xp, setXp] = useState(0);
   const [streak, setStreak] = useState(0);

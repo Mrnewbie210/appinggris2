@@ -8,14 +8,12 @@ import {
   User, 
   Calendar, 
   CheckCircle2, 
-  ChevronRight, 
-  Flame, 
+  Flame,
   Trophy,
   Play,
   RotateCcw,
   Search,
   Check,
-  X,
   CreditCard,
   ChevronLeft
 } from 'lucide-react';
@@ -29,6 +27,7 @@ import VocabularyPage from './pages/VocabularyPage';
 import GrammarPage from './pages/GrammarPage';
 import ProgressPage from './pages/ProgressPage';
 import HomePage from './pages/HomePage';
+import ExercisePage from './pages/ExercisePage';
 
 // --- Types ---
 type Page = 'home' | 'vocabulary' | 'grammar' | 'exercise' | 'progress';
@@ -45,13 +44,6 @@ const ProgressBar = ({ progress }: { progress: number }) => (
     />
   </div>
 );
-
-const Card = ({ children, className = "", ...props }: { children: React.ReactNode, className?: string } & React.HTMLAttributes<HTMLDivElement>) => (
-  <div className={`card-base ${className}`} {...props}>
-    {children}
-  </div>
-);
-
 
 const Badge = ({ children, color = "mint" }: { children: React.ReactNode, color?: string }) => {
   const colors: Record<string, string> = {
@@ -132,73 +124,6 @@ const playSound = (type: 'correct' | 'wrong') => {
 // Internal Vocabulary component removed in favor of src/pages/VocabularyPage.tsx
 
 // Internal Grammar component removed in favor of src/pages/GrammarPage.tsx
-
-const Exercise = () => {
-  const [isStarted, setIsStarted] = useState(false);
-
-  if (!isStarted) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[70vh] gap-6 text-center">
-        <div className="w-32 h-32 bg-mint/10 rounded-[40px] flex items-center justify-center">
-          <PenTool size={64} className="text-mint" />
-        </div>
-        <div>
-          <h1 className="text-2xl font-bold mb-2">Siap Latihan?</h1>
-          <p className="text-gray-500 max-w-xs mx-auto mb-8">
-            Uji pemahamanmu dalam kuis cepat 10 menit.
-          </p>
-        </div>
-        <button 
-          onClick={() => setIsStarted(true)}
-          className="w-full max-w-xs soft-gradient text-white py-4 rounded-2xl font-bold shadow-lg shadow-mint/20"
-        >
-          Mulai Sesi Latihan
-        </button>
-      </div>
-    );
-  }
-
-  return (
-    <motion.div 
-      initial={{ opacity: 0 }} 
-      animate={{ opacity: 1 }}
-      className="flex flex-col gap-6"
-    >
-      <div className="flex justify-between items-center sticky top-0 bg-warm-white/90 backdrop-blur-md py-4 z-10 px-2">
-        <button onClick={() => setIsStarted(false)} className="bg-white p-2 rounded-xl border border-gray-100 text-gray-400">
-           <X size={20} />
-        </button>
-        <div className="flex flex-col items-center">
-          <span className="text-xs font-bold text-gray-400">WAKTU TERSISA</span>
-          <span className="text-xl font-bold text-charcoal tabular-nums">08:42</span>
-        </div>
-        <div className="w-10 h-10 bg-mint/10 rounded-xl flex items-center justify-center text-mint font-bold text-xs border border-mint/20">
-          5/15
-        </div>
-      </div>
-
-      <Card className="min-h-[400px] flex flex-col">
-        <span className="text-mint font-black text-[10px] tracking-widest mb-4 uppercase">Fill in the blank</span>
-        <h2 className="text-2xl font-bold leading-relaxed mb-12">
-          "I have been <span className="text-mint underline decoration-2 underline-offset-4 font-black">_________</span> English since I was seven years old."
-        </h2>
-        
-        <div className="grid grid-cols-1 gap-4 mt-auto">
-          {['Study', 'Studied', 'Studying', 'Studies'].map((choice, i) => (
-            <button key={i} className="w-full p-5 rounded-2xl border-2 border-gray-50 text-left font-bold text-lg hover:border-mint hover:bg-mint/5 transition-all">
-              {choice}
-            </button>
-          ))}
-        </div>
-      </Card>
-      
-      <button className="mt-4 bg-charcoal text-white py-5 rounded-2xl font-bold text-lg flex items-center justify-center gap-2 group">
-        Berikutnya
-        <ChevronRight className="group-hover:translate-x-1 transition-transform" />
-      </button>
-    </motion.div>
-  );
-};
 
 // Internal Progress component removed in favor of src/pages/ProgressPage.tsx
 
@@ -287,7 +212,7 @@ export default function App() {
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col gap-8 p-4 lg:p-10 max-w-4xl mx-auto w-full">
-        <main className="flex-1 w-full no-scrollbar overflow-y-auto h-screen lg:h-auto">
+        <main className="flex-1 w-full no-scrollbar overflow-y-auto h-screen lg:h-auto pb-28 lg:pb-0">
           {/* Desktop Header */}
           <header className="hidden lg:block mb-8">
             <h1 className="text-3xl font-bold text-charcoal">Halo, Hari Santoso! 👋</h1>
@@ -304,7 +229,7 @@ export default function App() {
             {currentPage === 'grammar' && (
               <GrammarPage key="grammar" />
             )}
-            {currentPage === 'exercise' && <Exercise key="exercise" />}
+            {currentPage === 'exercise' && <ExercisePage key="exercise" />}
             {currentPage === 'progress' && <ProgressPage key="progress" />}
           </AnimatePresence>
         </main>
