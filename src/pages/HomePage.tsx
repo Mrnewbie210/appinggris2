@@ -11,9 +11,7 @@ import type { Task } from '../types';
 
 // Konstanta target belajar
 const TARGET_WORDS = 5000;
-const STUDY_START_DATE = new Date('2026-04-08');
-const STUDY_END_DATE = new Date('2026-09-08');
-const TOTAL_DAYS = Math.ceil((STUDY_END_DATE.getTime() - STUDY_START_DATE.getTime()) / (1000 * 60 * 60 * 24));
+const TOTAL_STUDY_DAYS = 180;
 
 const DEFAULT_TASKS: Task[] = [
   { id: 'vocabulary', title: 'Vocabulary', status: 'pending' },
@@ -30,6 +28,8 @@ export default function HomePage({ onNavigate, key }: { onNavigate?: (page: any)
   const [userName, setUserName] = useState('Hari');
   const [todayDate, setTodayDate] = useState('');
   const [masterPlanProgress, setMasterPlanProgress] = useState(0);
+  const [studyStartDateStr, setStudyStartDateStr] = useState('');
+  const [studyEndDateStr, setStudyEndDateStr] = useState('');
 
   useEffect(() => {
     // Format tanggal hari ini pakai timezone Tokyo
@@ -42,12 +42,6 @@ export default function HomePage({ onNavigate, key }: { onNavigate?: (page: any)
       timeZone: 'Asia/Tokyo'
     });
     setTodayDate(dateStr);
-
-    // Hitung progress master plan berdasarkan hari yang sudah lewat
-    const today = new Date();
-    const daysPassed = Math.ceil((today.getTime() - STUDY_START_DATE.getTime()) / (1000 * 60 * 60 * 24));
-    const progress = Math.min(Math.round((daysPassed / TOTAL_DAYS) * 100), 100);
-    setMasterPlanProgress(progress);
 
     // Load tasks dari localStorage
     const savedTasks = localStorage.getItem('daily_tasks');
@@ -66,11 +60,25 @@ export default function HomePage({ onNavigate, key }: { onNavigate?: (page: any)
     // Fetch data dari Supabase
     async function fetchUserData() {
       try {
-        const { data: authData } = await getActiveUser();
+        const { data: authData } = await supabase.auth.getUser();
         if (!authData?.user) return;
 
         const userId = authData.user.id;
         setUserName(authData.user.email?.split('@')[0] || 'Hari');
+
+        // Kalkulasi Progres Master Plan secara Individual
+        const createdAt = new Date(authData.user.created_at);
+        const endDate = new Date(createdAt);
+        endDate.setDate(endDate.getDate() + TOTAL_STUDY_DAYS);
+        
+        const formatDate = (d: Date) => d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+        setStudyStartDateStr(formatDate(createdAt));
+        setStudyEndDateStr(formatDate(endDate));
+
+        const today = new Date();
+        const daysPassed = Math.ceil((today.getTime() - createdAt.getTime()) / (1000 * 60 * 60 * 24));
+        const progress = Math.max(0, Math.min(Math.round((daysPassed / TOTAL_STUDY_DAYS) * 100), 100));
+        setMasterPlanProgress(progress);
 
         // Fetch XP dan streak dari user_progress
         const { data: progressData } = await supabase
@@ -149,7 +157,7 @@ export default function HomePage({ onNavigate, key }: { onNavigate?: (page: any)
           </div>
           <ProgressBar progress={masterPlanProgress} />
           <p className="text-xs text-gray-400 mt-2">
-            8 Apr 2026 → 8 Sep 2026 • Target PTE Academic skor 30
+            {studyStartDateStr} → {studyEndDateStr} • Target PTE Academic skor 30
           </p>
         </Card>
 

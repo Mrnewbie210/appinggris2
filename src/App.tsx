@@ -28,6 +28,8 @@ import GrammarPage from './pages/GrammarPage';
 import ProgressPage from './pages/ProgressPage';
 import HomePage from './pages/HomePage';
 import ExercisePage from './pages/ExercisePage';
+import LoginPage from './pages/LoginPage';
+import { LogOut } from 'lucide-react';
 
 // --- Types ---
 type Page = 'home' | 'vocabulary' | 'grammar' | 'exercise' | 'progress';
@@ -61,31 +63,40 @@ const Badge = ({ children, color = "mint" }: { children: React.ReactNode, color?
 };
 
 
-const Sidebar = ({ currentPage, setCurrentPage }: { currentPage: Page, setCurrentPage: (p: Page) => void }) => (
-  <nav className="hidden lg:flex w-64 bg-white border-r border-[#EDEDED] p-10 flex-col gap-10 h-screen sticky top-0">
-    <div className="logo flex items-center gap-3 font-extrabold text-xl">
-      <span className="bg-mint text-white w-8 h-8 grid place-items-center rounded-lg">E</span>
-      EM Plan
+const Sidebar = ({ currentPage, setCurrentPage, onLogout }: { currentPage: Page, setCurrentPage: (p: Page) => void, onLogout: () => void }) => (
+  <nav className="hidden lg:flex w-64 bg-white border-r border-[#EDEDED] p-10 flex-col gap-10 h-screen sticky top-0 justify-between">
+    <div>
+      <div className="logo flex items-center gap-3 font-extrabold text-xl mb-10">
+        <span className="bg-mint text-white w-8 h-8 grid place-items-center rounded-lg">E</span>
+        EM Plan
+      </div>
+      <div className="flex flex-col gap-3">
+        {[
+          { id: 'home', label: 'Beranda', icon: <HomeIcon size={18} /> },
+          { id: 'vocabulary', label: 'Kosakata', icon: <BookOpen size={18} /> },
+          { id: 'grammar', label: 'Tata Bahasa', icon: <Video size={18} /> },
+          { id: 'exercise', label: 'Latihan', icon: <PenTool size={18} /> },
+          { id: 'progress', label: 'Progres', icon: <BarChart2 size={18} /> },
+        ].map((item) => (
+          <button
+            key={item.id}
+            onClick={() => setCurrentPage(item.id as Page)}
+            className={`flex items-center gap-3 px-5 py-3.5 rounded-2xl font-bold text-sm transition-all ${currentPage === item.id ? 'bg-mint text-white shadow-lg shadow-mint/20' : 'text-secondary hover:bg-gray-50'}`}
+          >
+            {item.icon}
+            {item.label}
+          </button>
+        ))}
+      </div>
     </div>
-    <div className="flex flex-col gap-3">
-      {[
-        { id: 'home', label: 'Beranda', icon: <HomeIcon size={18} /> },
-        { id: 'vocabulary', label: 'Kosakata', icon: <BookOpen size={18} /> },
-        { id: 'grammar', label: 'Tata Bahasa', icon: <Video size={18} /> },
-        { id: 'exercise', label: 'Latihan', icon: <PenTool size={18} /> },
-        { id: 'progress', label: 'Progres', icon: <BarChart2 size={18} /> },
-      ].map((item) => (
-        <button
-          key={item.id}
-          onClick={() => setCurrentPage(item.id as Page)}
-          className={`flex items-center gap-3 px-5 py-3.5 rounded-2xl font-bold text-sm transition-all ${currentPage === item.id ? 'bg-mint text-white shadow-lg shadow-mint/20' : 'text-secondary hover:bg-gray-50'}`}
-        >
-          {item.icon}
-          {item.label}
-        </button>
-      ))}
-    </div>
-
+    
+    <button
+      onClick={onLogout}
+      className="flex items-center gap-3 px-5 py-3.5 rounded-2xl font-bold text-sm text-red-500 hover:bg-red-50 transition-all mt-auto"
+    >
+      <LogOut size={18} />
+      Keluar
+    </button>
   </nav>
 );
 
@@ -132,11 +143,13 @@ const playSound = (type: 'correct' | 'wrong') => {
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState<Page>('home');
-  const [xp, setXp] = useState<number>(() => parseInt(localStorage.getItem('user_xp') || '130'));
-  const [streak, setStreak] = useState<number>(() => parseInt(localStorage.getItem('user_streak') || '12'));
+  const [xp, setXp] = useState<number>(() => parseInt(localStorage.getItem('user_xp') || '0'));
+  const [streak, setStreak] = useState<number>(() => parseInt(localStorage.getItem('user_streak') || '0'));
   const [words, setWords] = useState<VocabWord[]>([]);
   const [masteredCount, setMasteredCount] = useState<number>(0);
   const [isLoading, setIsLoading] = useState(true);
+  const [session, setSession] = useState<any>(null);
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
 
   const todayStr = useMemo(() => {
     return new Date().toLocaleDateString('id-ID', { 
@@ -163,27 +176,77 @@ export default function App() {
         const mastered = JSON.parse(localStorage.getItem('mastered_words') || '[]');
         setMasteredCount(mastered.length);
 
-        // Optional Supabase sync for XP/Streak if auth session exists
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session) {
-          const { data: progress } = await supabase
-            .from('user_progress')
-            .select('xp, streak_days')
-            .single();
+        // Session & Auth Handling
+        supabase.auth.getSession().then(({ data: { session } }) => {
+          setSession(session);
+          setIsAuthLoading(false);
+          if (session) fetchProgress(session.user.id);
+        });
+
+        const {
+          data: { subscription },
+        } = supabase.auth.onAuthStateChange(async (_event, newSession) => {
+          setSession(newSession);
+          setIsAuthLoading(false);
           
-          if (progress) {
-            setXp(progress.xp);
-            setStreak(progress.streak_days);
+          if (newSession && _event === 'SIGNED_IN') {
+            await handleDataMigration(newSession.user);
+            await fetchProgress(newSession.user.id);
           }
-        }
+        });
+
+        return () => subscription.unsubscribe();
+
       } catch (err) {
         console.warn("Using local fallback for progress.");
-      } finally {
         setIsLoading(false);
       }
     };
     initData();
   }, []);
+
+  const handleDataMigration = async (user: any) => {
+    const localXp = localStorage.getItem('user_xp');
+    const localStreak = localStorage.getItem('user_streak');
+    
+    if (localXp || localStreak) {
+      const { data: existingProgress } = await supabase
+        .from('user_progress')
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle();
+        
+      if (!existingProgress) {
+        // Migrate local data on first login
+        const masteredLocal = JSON.parse(localStorage.getItem('mastered_words') || '[]');
+        await supabase.from('user_progress').insert({
+          user_id: user.id,
+          xp: parseInt(localXp || '0'),
+          streak_days: parseInt(localStreak || '0'),
+          words_mastered: masteredLocal.length,
+          display_name: user.user_metadata?.full_name || user.email?.split('@')[0],
+          last_study_date: localStorage.getItem('last_study_date') || new Date().toISOString()
+        });
+        
+        // Push mastered words to spaced_repetition if possible, or leave them local and just set the count
+        console.log('✅ Migrated local data to Supabase!');
+      }
+    }
+  };
+
+  const fetchProgress = async (userId: string) => {
+    const { data: progress } = await supabase
+      .from('user_progress')
+      .select('xp, streak_days')
+      .eq('user_id', userId)
+      .maybeSingle();
+    
+    if (progress) {
+      setXp(progress.xp);
+      setStreak(progress.streak_days);
+    }
+    setIsLoading(false);
+  };
 
   // Update mastery count whenever words/local changes
   useEffect(() => {
@@ -205,10 +268,26 @@ export default function App() {
     }
   };
 
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+  };
+
+  if (isAuthLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-warm-white">
+        <div className="w-10 h-10 border-4 border-mint/30 border-t-mint rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
+  if (!session) {
+    return <LoginPage />;
+  }
+
   return (
     <div className="min-h-screen bg-warm-white flex">
       {/* Desktop Sidebar */}
-      <Sidebar currentPage={currentPage} setCurrentPage={setCurrentPage} />
+      <Sidebar currentPage={currentPage} setCurrentPage={setCurrentPage} onLogout={handleLogout} />
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col gap-8 p-4 lg:p-10 max-w-4xl mx-auto w-full">
