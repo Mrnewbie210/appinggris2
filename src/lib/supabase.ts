@@ -3,15 +3,24 @@ import type { VocabWord, SpacedRepetitionData, UserProgress } from '../types';
 
 // ─── Environment Variables ────────────────────────────────────────────────────
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
 
-if (!supabaseUrl || !supabaseAnonKey) {
+const hasSupabaseConfig = Boolean(supabaseUrl && supabaseAnonKey);
+
+if (!hasSupabaseConfig) {
   console.warn(
     '[appinggris] Supabase env vars missing — running in offline/mock mode.\n' +
     'Copy .env.example → .env.local and fill in your project credentials.'
   );
 }
+
+// Fallback placeholders so `createClient` doesn't throw at module load when
+// env vars are missing (e.g. on first deploy before secrets are set). Any
+// network call against these will fail, but the app shell will still render
+// and `isSupabaseReady` lets calling code branch into mock/offline behavior.
+const effectiveUrl = supabaseUrl || 'https://placeholder.supabase.co';
+const effectiveAnonKey = supabaseAnonKey || 'placeholder-anon-key';
 
 // ─── Typed Database Schema ────────────────────────────────────────────────────
 
@@ -77,7 +86,7 @@ export interface Database {
  *     .select('*')
  *     .eq('level', 'B1');
  */
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+export const supabase = createClient(effectiveUrl, effectiveAnonKey, {
   auth: {
     persistSession: true,
     autoRefreshToken: true,
@@ -89,4 +98,4 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 // ─── Helper: check if Supabase is configured ─────────────────────────────────
 
 /** Returns true if the Supabase client is properly configured. */
-export const isSupabaseReady = Boolean(supabaseUrl && supabaseAnonKey);
+export const isSupabaseReady = hasSupabaseConfig;
