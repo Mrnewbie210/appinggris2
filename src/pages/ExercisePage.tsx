@@ -491,16 +491,17 @@ export default function ExercisePage() {
     if (selectedSessionId !== null) loadSession(selectedSessionId);
   };
 
-  // Loading screen
   if (screen === 'quiz' && isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="text-center">
-          <div className="w-16 h-16 bg-mint/20 rounded-2xl flex items-center justify-center mx-auto mb-4 animate-pulse">
-            <PenTool size={32} className="text-mint" />
-          </div>
-          <p className="text-gray-400 font-medium">Memuat soal...</p>
-        </div>
+      <div className="flex flex-col gap-6 animate-pulse p-4">
+         <div className="w-full h-12 bg-gray-200 rounded-xl" />
+         <div className="w-full h-48 bg-gray-200 rounded-2xl" />
+         <div className="space-y-4 mt-8">
+            <div className="w-full h-16 bg-gray-200 rounded-2xl" />
+            <div className="w-full h-16 bg-gray-200 rounded-2xl" />
+            <div className="w-full h-16 bg-gray-200 rounded-2xl" />
+            <div className="w-full h-16 bg-gray-200 rounded-2xl" />
+         </div>
       </div>
     );
   }

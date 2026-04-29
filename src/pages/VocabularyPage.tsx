@@ -208,9 +208,13 @@ export default function VocabularyPage() {
 
   if (isLoading) {
     return (
-      <div className="flex flex-col items-center justify-center py-32 gap-4">
-        <Loader className="animate-spin text-mint" size={32} />
-        <p className="text-gray-500 text-sm font-semibold">Memuat data Dashboard...</p>
+      <div className="flex flex-col gap-6 animate-pulse pb-24">
+         {/* Skeleton Header */}
+         <div className="w-full h-32 bg-gray-200 rounded-2xl" />
+         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="h-64 bg-gray-200 rounded-2xl md:col-span-2" />
+            <div className="h-64 bg-gray-200 rounded-2xl" />
+         </div>
       </div>
     );
   }

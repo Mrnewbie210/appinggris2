@@ -77,8 +77,10 @@ export default function LibraryPage() {
       </div>
 
       {isLoading ? (
-        <div className="py-20 text-center text-gray-400 font-bold animate-pulse">
-          Memuat Kamus Data...
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 pb-10">
+           {Array.from({length: 6}).map((_, i) => (
+             <div key={i} className="h-32 bg-gray-200 animate-pulse rounded-2xl" />
+           ))}
         </div>
       ) : filteredWords.length === 0 ? (
         <div className="py-20 text-center flex flex-col items-center gap-2">

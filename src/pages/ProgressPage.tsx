@@ -156,8 +156,15 @@ export default function ProgressPage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-[60vh] text-mint animate-pulse font-bold">
-        Memuat data progres...
+      <div className="flex flex-col gap-6 w-full animate-pulse pb-24">
+        <div className="h-16 w-64 bg-gray-200 rounded-xl" />
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="h-32 bg-gray-200 rounded-2xl" />
+          <div className="h-32 bg-gray-200 rounded-2xl" />
+          <div className="h-32 bg-gray-200 rounded-2xl" />
+          <div className="h-32 bg-gray-200 rounded-2xl" />
+        </div>
+        <div className="h-48 bg-gray-200 rounded-2xl" />
       </div>
     );
   }

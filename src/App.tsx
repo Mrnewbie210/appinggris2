@@ -321,8 +321,17 @@ export default function App() {
 
   if (isAuthLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-warm-white">
-        <div className="w-10 h-10 border-4 border-mint/30 border-t-mint rounded-full animate-spin"></div>
+      <div className="min-h-screen bg-warm-white flex flex-col md:flex-row p-4 md:p-8 gap-8">
+        <div className="hidden md:block w-64 bg-gray-200 animate-pulse rounded-2xl h-[calc(100vh-4rem)]" />
+        <div className="flex-1 space-y-6">
+           <div className="h-12 w-48 md:w-64 bg-gray-200 animate-pulse rounded-xl" />
+           <div className="h-48 w-full bg-gray-200 animate-pulse rounded-2xl" />
+           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="h-32 bg-gray-200 animate-pulse rounded-2xl" />
+              <div className="h-32 bg-gray-200 animate-pulse rounded-2xl" />
+              <div className="h-32 bg-gray-200 animate-pulse rounded-2xl" />
+           </div>
+        </div>
       </div>
     );
   }
