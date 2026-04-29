@@ -22,23 +22,17 @@ const DEFAULT_TASKS: Task[] = [
 
 export default function HomePage({ onNavigate, key }: { onNavigate?: (page: any) => void, key?: React.Key }) {
   const [tasks, setTasks] = useState<Task[]>(DEFAULT_TASKS);
-  const [xp, setXp] = useState(0);
-  const [streak, setStreak] = useState(0);
-  const [masteredWords, setMasteredWords] = useState(0);
+  const [xp, setXp] = useState(() => parseInt(localStorage.getItem('user_xp') || '0'));
+  const [streak, setStreak] = useState(() => parseInt(localStorage.getItem('user_streak') || '0'));
+  const [masteredWords, setMasteredWords] = useState(() => {
+    const localMastered = JSON.parse(localStorage.getItem('mastered_words') || '[]');
+    return localMastered.length;
+  });
   const [userName, setUserName] = useState('Hari');
   const [todayDate, setTodayDate] = useState('');
   const [masterPlanProgress, setMasterPlanProgress] = useState(0);
   const [studyStartDateStr, setStudyStartDateStr] = useState('');
   const [studyEndDateStr, setStudyEndDateStr] = useState('');
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    // Timeout maksimal 3 detik agar tidak stuck loading
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 3000);
-    return () => clearTimeout(timer);
-  }, []);
 
   useEffect(() => {
     // Format tanggal hari ini pakai timezone Tokyo
@@ -110,12 +104,13 @@ export default function HomePage({ onNavigate, key }: { onNavigate?: (page: any)
           .eq('user_id', userId)
           .eq('status', 'mastered');
 
-        if (count && count > 0) setMasteredWords(count);
+        if (count && count > 0) {
+          setMasteredWords(count);
+          // Just update state, localStorage is handled globally or we can do it here
+        }
 
       } catch (err) {
         console.warn('HomePage data fetch error:', err);
-      } finally {
-        setIsLoading(false);
       }
     }
 
@@ -144,15 +139,6 @@ export default function HomePage({ onNavigate, key }: { onNavigate?: (page: any)
 
   const masteredPercent = Math.min(Math.round((masteredWords / TARGET_WORDS) * 100), 100);
   const rank = getEnglishRank(xp);
-
-  if (isLoading) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[50vh] gap-4">
-         <Loader className="w-8 h-8 text-mint animate-spin" />
-         <p className="text-gray-400 font-bold animate-pulse">Memuat dashboard...</p>
-      </div>
-    );
-  }
 
   return (
     <motion.div

@@ -13,6 +13,7 @@ import type { VocabWord } from '../types';
 import FlashcardSession from '../components/vocabulary/FlashcardSession';
 import LearnMode from '../components/vocabulary/LearnMode';
 import QuizMode from '../components/vocabulary/QuizMode';
+import { getVocabulary, saveVocabularyBatch } from '../lib/offlineStorage';
 
 let globalVocabCache: VocabWord[] | null = null;
 
@@ -73,23 +74,30 @@ export default function VocabularyPage() {
           sorted = globalVocabCache;
           setAllWords(sorted);
         } else {
-          let allVocabData: any[] = [];
-          let from = 0;
-          const pageSize = 1000;
-          while (true) {
-            const { data: pageData, error: fetchError } = await supabase
-              .from('vocabulary')
-              .select('*')
-              .order('created_at', { ascending: true })
-              .range(from, from + pageSize - 1);
-            if (fetchError) throw fetchError;
-            if (!pageData || pageData.length === 0) break;
-            allVocabData = [...allVocabData, ...pageData];
-            if (pageData.length < pageSize) break;
-            from += pageSize;
+          // 1. Try to read from IndexedDB
+          let allVocabData = await getVocabulary();
+          
+          // 2. Fallback to Supabase if IndexedDB is empty
+          if (!allVocabData || allVocabData.length === 0) {
+            console.log("IndexedDB empty. Fetching from Supabase...");
+            let from = 0;
+            const pageSize = 1000;
+            while (true) {
+              const { data: pageData, error: fetchError } = await supabase
+                .from('vocabulary')
+                .select('*')
+                .order('created_at', { ascending: true })
+                .range(from, from + pageSize - 1);
+              if (fetchError) throw fetchError;
+              if (!pageData || pageData.length === 0) break;
+              allVocabData = [...allVocabData, ...pageData];
+              if (pageData.length < pageSize) break;
+              from += pageSize;
+            }
+            if (allVocabData.length > 0) {
+              await saveVocabularyBatch(allVocabData);
+            }
           }
-
-          console.log(`DEBUG VOCAB FETCH: Received ${allVocabData.length} rows from Supabase 'vocabulary' table.`);
 
           const orderConfig: Record<string, number> = { A1: 1, A2: 2, B1: 3, B2: 4, C1: 5 };
           sorted = allVocabData.sort((a, b) => {

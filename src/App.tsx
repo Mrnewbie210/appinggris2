@@ -29,8 +29,9 @@ import ProgressPage from './pages/ProgressPage';
 import HomePage from './pages/HomePage';
 import ExercisePage from './pages/ExercisePage';
 import LoginPage from './pages/LoginPage';
-import { LogOut } from 'lucide-react';
+import { LogOut, Loader as Spinner } from 'lucide-react';
 import logoUrl from './assets/logo.png';
+import { getVocabularyCount, saveVocabularyBatch, isOnline } from './lib/offlineStorage';
 
 // --- Types ---
 type Page = 'home' | 'vocabulary' | 'grammar' | 'exercise' | 'progress';
@@ -150,6 +151,9 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(true);
   const [session, setSession] = useState<any>(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
+  const [isOnlineStatus, setIsOnlineStatus] = useState(isOnline());
+  const [downloadProgress, setDownloadProgress] = useState(0);
+  const [isDownloading, setIsDownloading] = useState(false);
 
   const todayStr = useMemo(() => {
     return new Date().toLocaleDateString('id-ID', { 
@@ -160,6 +164,49 @@ export default function App() {
       timeZone: 'Asia/Tokyo'
     });
   }, []);
+
+  useEffect(() => {
+    const handleOnline = () => setIsOnlineStatus(true);
+    const handleOffline = () => setIsOnlineStatus(false);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!session) return;
+    async function syncOfflineData() {
+      if (!isOnline()) return;
+      try {
+        const count = await getVocabularyCount();
+        if (count < 100) {
+          setIsDownloading(true);
+          let allVocab = [];
+          let from = 0;
+          const pageSize = 1000;
+          while (true) {
+            const { data, error } = await supabase.from('vocabulary').select('*').range(from, from + pageSize - 1);
+            if (error || !data || data.length === 0) break;
+            allVocab = [...allVocab, ...data];
+            setDownloadProgress(Math.min(Math.round((allVocab.length / 5000) * 100), 100));
+            if (data.length < pageSize) break;
+            from += pageSize;
+          }
+          if (allVocab.length > 0) {
+            await saveVocabularyBatch(allVocab);
+          }
+          setIsDownloading(false);
+        }
+      } catch (err) {
+        console.error("Offline sync failed", err);
+        setIsDownloading(false);
+      }
+    }
+    syncOfflineData();
+  }, [session]);
 
   // Sync with Supabase on mount
   useEffect(() => {
@@ -285,7 +332,19 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-warm-white flex">
+    <div className="min-h-screen bg-warm-white flex flex-col">
+      {!isOnlineStatus && (
+        <div className="bg-red-500 text-white text-center py-1.5 text-[10px] sm:text-xs font-bold w-full z-50 sticky top-0 shadow-md">
+          ⚠️ Mode Offline Aktif - Beberapa fitur mungkin tidak disinkronisasi
+        </div>
+      )}
+      {isDownloading && (
+        <div className="bg-mint text-white text-center py-1.5 text-[10px] sm:text-xs font-bold w-full z-50 sticky top-0 flex items-center justify-center gap-2 shadow-md">
+          <Spinner size={14} className="animate-spin" />
+          Mengunduh Database Kosakata Offline... {downloadProgress}%
+        </div>
+      )}
+      <div className="flex-1 flex w-full relative">
       {/* Desktop Sidebar */}
       <Sidebar currentPage={currentPage} setCurrentPage={setCurrentPage} onLogout={handleLogout} />
 
@@ -350,8 +409,9 @@ export default function App() {
       </nav>
       
       {/* Decorative Blur Elements */}
-      <div className="fixed top-0 left-0 w-64 h-64 bg-mint/10 blur-[100px] -z-10 rounded-full" />
-      <div className="fixed bottom-0 right-0 w-64 h-64 bg-peach/10 blur-[100px] -z-10 rounded-full" />
+      <div className="fixed top-0 left-0 w-64 h-64 bg-mint/10 blur-[100px] -z-10 rounded-full pointer-events-none" />
+      <div className="fixed bottom-0 right-0 w-64 h-64 bg-peach/10 blur-[100px] -z-10 rounded-full pointer-events-none" />
+      </div>
     </div>
   );
 }
