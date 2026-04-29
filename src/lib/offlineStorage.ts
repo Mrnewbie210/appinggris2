@@ -25,6 +25,7 @@ export function initDB() {
         if (!db.objectStoreNames.contains('vocabulary')) {
           const vocabStore = db.createObjectStore('vocabulary', { keyPath: 'id' });
           vocabStore.createIndex('by-level', 'level');
+          vocabStore.createIndex('by-word', 'word');
         }
         if (!db.objectStoreNames.contains('exercise')) {
           db.createObjectStore('exercise');

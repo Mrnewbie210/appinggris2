@@ -32,7 +32,7 @@ export default function VocabularyPage() {
   // No router needed
 
   const [mode, setMode] = useState<VocabMode>('dashboard');
-  const [allWords, setAllWords] = useState<VocabWord[]>([]);
+  const [allWords, setAllWords] = useState<VocabWord[]>(globalVocabCache || []);
   const [batches, setBatches] = useState<DayBatch[]>([]);
   const [selectedBatchIndex, setSelectedBatchIndex] = useState<number>(0);
 
@@ -65,7 +65,6 @@ export default function VocabularyPage() {
   useEffect(() => {
     async function fetchWords() {
       try {
-        setIsLoading(true);
         setError(null);
 
         let sorted: VocabWord[] = [];
@@ -77,23 +76,25 @@ export default function VocabularyPage() {
           // 1. Try to read from IndexedDB
           let allVocabData = await getVocabulary();
           
-          // 2. Fallback to Supabase if IndexedDB is empty
+          // 2. Fallback to Supabase if IndexedDB is empty (Parallel fetch)
           if (!allVocabData || allVocabData.length === 0) {
-            console.log("IndexedDB empty. Fetching from Supabase...");
-            let from = 0;
+            console.log("IndexedDB empty. Fetching from Supabase in parallel...");
             const pageSize = 1000;
-            while (true) {
-              const { data: pageData, error: fetchError } = await supabase
+            const promises = [0, 1, 2, 3, 4].map(i => {
+              const from = i * pageSize;
+              return supabase
                 .from('vocabulary')
                 .select('*')
                 .order('created_at', { ascending: true })
                 .range(from, from + pageSize - 1);
+            });
+            
+            const results = await Promise.all(promises);
+            for (const { data, error: fetchError } of results) {
               if (fetchError) throw fetchError;
-              if (!pageData || pageData.length === 0) break;
-              allVocabData = [...allVocabData, ...pageData];
-              if (pageData.length < pageSize) break;
-              from += pageSize;
+              if (data) allVocabData = [...allVocabData, ...data];
             }
+            
             if (allVocabData.length > 0) {
               await saveVocabularyBatch(allVocabData);
             }

@@ -184,16 +184,22 @@ export default function App() {
         const count = await getVocabularyCount();
         if (count < 100) {
           setIsDownloading(true);
-          let allVocab = [];
-          let from = 0;
+          let allVocab: VocabWord[] = [];
           const pageSize = 1000;
-          while (true) {
-            const { data, error } = await supabase.from('vocabulary').select('*').range(from, from + pageSize - 1);
-            if (error || !data || data.length === 0) break;
-            allVocab = [...allVocab, ...data];
-            setDownloadProgress(Math.min(Math.round((allVocab.length / 5000) * 100), 100));
-            if (data.length < pageSize) break;
-            from += pageSize;
+          const promises = [0, 1, 2, 3, 4].map(i => {
+            const from = i * pageSize;
+            return supabase.from('vocabulary').select('*').range(from, from + pageSize - 1);
+          });
+          const results = await Promise.all(promises);
+          
+          let totalFetched = 0;
+          for (const { data, error } of results) {
+            if (error) throw error;
+            if (data) {
+              allVocab = [...allVocab, ...data];
+              totalFetched += data.length;
+              setDownloadProgress(Math.min(Math.round((totalFetched / 5000) * 100), 100));
+            }
           }
           if (allVocab.length > 0) {
             await saveVocabularyBatch(allVocab);
