@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
-import { Sparkles, AlertCircle, Mail, Lock, LogIn } from 'lucide-react';
+import { AlertCircle, Mail, Lock, LogIn } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { Card } from '../components/ui/Card';
+import logoUrl from '../assets/logo.png';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -50,12 +51,11 @@ export default function LoginPage() {
         animate={{ opacity: 1, y: 0 }}
         className="w-full max-w-md relative z-10"
       >
-        <Card className="p-8 flex flex-col items-center">
-          <div className="w-16 h-16 bg-mint rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-mint/20">
-            <Sparkles className="text-white w-8 h-8" />
+        <Card className="p-8 flex flex-col items-center overflow-hidden">
+          <div className="-mt-12 -mb-8 flex justify-center w-full">
+            <img src={logoUrl} alt="English Every Day Logo" className="w-80 max-w-none h-auto object-contain mix-blend-multiply scale-125" />
           </div>
           
-          <h1 className="text-3xl font-extrabold text-charcoal mb-2 text-center">EEM Plan</h1>
           <p className="text-secondary opacity-80 mb-8 text-center text-sm">
             Platform akses tertutup. Masukkan kredensial yang diberikan admin.
           </p>

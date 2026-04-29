@@ -1,12 +1,15 @@
+import { grammarExercises, Exercise } from './grammarExercises';
+
 export interface GrammarLesson {
   id: number;
   bab_number: number | string;
   lesson_number: number;
   title: string;
   video_url: string;
+  exercises?: Exercise[];
 }
 
-export const grammarCurriculum: GrammarLesson[] = [
+const rawCurriculum: GrammarLesson[] = [
   // BAB 1: Dasar Kalimat (Lesson 1-7)
   {
     id: 1,
@@ -289,3 +292,8 @@ export const grammarCurriculum: GrammarLesson[] = [
     video_url: 'https://www.youtube.com/watch?v=mxXm1x8jgoQ'
   },
 ];
+
+export const grammarCurriculum: GrammarLesson[] = rawCurriculum.map(lesson => ({
+  ...lesson,
+  exercises: grammarExercises[lesson.id] || []
+}));

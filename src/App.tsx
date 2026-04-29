@@ -30,6 +30,7 @@ import HomePage from './pages/HomePage';
 import ExercisePage from './pages/ExercisePage';
 import LoginPage from './pages/LoginPage';
 import { LogOut } from 'lucide-react';
+import logoUrl from './assets/logo.png';
 
 // --- Types ---
 type Page = 'home' | 'vocabulary' | 'grammar' | 'exercise' | 'progress';
@@ -64,11 +65,10 @@ const Badge = ({ children, color = "mint" }: { children: React.ReactNode, color?
 
 
 const Sidebar = ({ currentPage, setCurrentPage, onLogout }: { currentPage: Page, setCurrentPage: (p: Page) => void, onLogout: () => void }) => (
-  <nav className="hidden lg:flex w-64 bg-white border-r border-[#EDEDED] p-10 flex-col gap-10 h-screen sticky top-0 justify-between">
+  <nav className="hidden md:flex w-64 bg-white border-r border-[#EDEDED] p-10 flex-col gap-10 h-screen sticky top-0 justify-between">
     <div>
-      <div className="logo flex items-center gap-3 font-extrabold text-xl mb-10">
-        <span className="bg-mint text-white w-8 h-8 grid place-items-center rounded-lg">E</span>
-        EM Plan
+      <div className="logo mb-8 flex items-center justify-start -ml-6 -mr-6 -mt-4">
+        <img src={logoUrl} alt="English Every Day Logo" className="w-full h-auto object-contain mix-blend-multiply" />
       </div>
       <div className="flex flex-col gap-3">
         {[
@@ -290,10 +290,10 @@ export default function App() {
       <Sidebar currentPage={currentPage} setCurrentPage={setCurrentPage} onLogout={handleLogout} />
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col gap-8 p-4 lg:p-10 max-w-4xl mx-auto w-full">
-        <main className="flex-1 w-full no-scrollbar overflow-y-auto h-screen lg:h-auto pb-28 lg:pb-0">
+      <div className="flex-1 flex flex-col gap-8 p-4 md:p-8 lg:p-10 max-w-4xl mx-auto w-full">
+        <main className="flex-1 w-full no-scrollbar overflow-y-auto h-screen md:h-auto pb-28 md:pb-0">
           {/* Desktop Header */}
-          <header className="hidden lg:block mb-8">
+          <header className="hidden md:block mb-8">
             <h1 className="text-3xl font-bold text-charcoal">Halo, Hari Santoso! 👋</h1>
             <p className="text-secondary opacity-60">{todayStr} • Semangat belajarnya!</p>
           </header>
@@ -316,7 +316,7 @@ export default function App() {
       </div>
 
       {/* Mobile Bottom Nav */}
-      <nav className="lg:hidden fixed bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-md bg-white border border-gray-100 px-2 py-2 rounded-[24px] custom-shadow z-50 flex items-center justify-between">
+      <nav className="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-md bg-white border border-gray-100 px-2 py-2 rounded-[24px] custom-shadow z-50 flex items-center justify-between">
         <NavItem 
           active={currentPage === 'home'} 
           onClick={() => setCurrentPage('home')} 

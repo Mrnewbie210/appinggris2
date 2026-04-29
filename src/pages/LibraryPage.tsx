@@ -56,7 +56,7 @@ export default function LibraryPage() {
           Kosakata Global
         </h1>
         <p className="text-gray-500 font-medium text-sm">
-          Akses seluruh materi kamus English Master plan.
+          Akses seluruh materi kamus English Every Day by Jago Academia.
         </p>
       </header>
 

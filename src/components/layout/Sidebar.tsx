@@ -1,5 +1,6 @@
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Home, BookOpen, Video, PenTool, BarChart2 } from 'lucide-react';
+import logoUrl from '../../assets/logo.png';
 
 const navItems = [
   { path: '/vocabulary', label: 'Dashboard', icon: Home },
@@ -14,9 +15,8 @@ export const Sidebar = () => {
   return (
     <nav className="hidden lg:flex w-64 bg-white border-r border-[#EDEDED] p-10 flex-col gap-10 h-screen sticky top-0 shrink-0">
       {/* Logo */}
-      <div className="flex items-center gap-3 font-extrabold text-xl">
-        <span className="bg-mint text-white w-8 h-8 grid place-items-center rounded-lg">E</span>
-        EM Plan
+      <div className="flex items-center justify-start -ml-6 -mr-6 -mt-4 mb-8">
+        <img src={logoUrl} alt="English Every Day Logo" className="w-full h-auto object-contain mix-blend-multiply" />
       </div>
 
       {/* Nav Links */}

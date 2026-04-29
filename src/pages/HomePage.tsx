@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
-import { Check, Flame, Sparkles, Target } from 'lucide-react';
+import { Check, Flame, Sparkles, Target, Loader } from 'lucide-react';
 import { Card } from '../components/ui/Card';
 import { getEnglishRank } from '../lib/rank';
 import { ProgressBar } from '../components/ui/ProgressBar';
@@ -30,6 +30,15 @@ export default function HomePage({ onNavigate, key }: { onNavigate?: (page: any)
   const [masterPlanProgress, setMasterPlanProgress] = useState(0);
   const [studyStartDateStr, setStudyStartDateStr] = useState('');
   const [studyEndDateStr, setStudyEndDateStr] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    // Timeout maksimal 3 detik agar tidak stuck loading
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 3000);
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     // Format tanggal hari ini pakai timezone Tokyo
@@ -60,13 +69,13 @@ export default function HomePage({ onNavigate, key }: { onNavigate?: (page: any)
     // Fetch data dari Supabase
     async function fetchUserData() {
       try {
-        const { data: authData } = await supabase.auth.getUser();
-        if (!authData?.user) return;
+        const { data: authData, error: authError } = await supabase.auth.getUser();
+        if (authError || !authData?.user) throw new Error('Auth failed or no user');
 
         const userId = authData.user.id;
         setUserName(authData.user.email?.split('@')[0] || 'Hari');
 
-        // Kalkulasi Progres Master Plan secara Individual
+        // Kalkulasi Progres English Every Day secara Individual
         const createdAt = new Date(authData.user.created_at);
         const endDate = new Date(createdAt);
         endDate.setDate(endDate.getDate() + TOTAL_STUDY_DAYS);
@@ -105,6 +114,8 @@ export default function HomePage({ onNavigate, key }: { onNavigate?: (page: any)
 
       } catch (err) {
         console.warn('HomePage data fetch error:', err);
+      } finally {
+        setIsLoading(false);
       }
     }
 
@@ -134,6 +145,15 @@ export default function HomePage({ onNavigate, key }: { onNavigate?: (page: any)
   const masteredPercent = Math.min(Math.round((masteredWords / TARGET_WORDS) * 100), 100);
   const rank = getEnglishRank(xp);
 
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[50vh] gap-4">
+         <Loader className="w-8 h-8 text-mint animate-spin" />
+         <p className="text-gray-400 font-bold animate-pulse">Memuat dashboard...</p>
+      </div>
+    );
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
@@ -141,16 +161,16 @@ export default function HomePage({ onNavigate, key }: { onNavigate?: (page: any)
       className="flex flex-col gap-8 pb-10"
     >
       {/* Header */}
-      <header className="mb-4 lg:hidden">
+      <header className="mb-4 md:hidden">
         <h1 className="text-2xl font-bold tracking-tight">Halo, {userName}! 👋</h1>
         <p className="text-secondary text-sm">{todayDate} • Semangat belajarnya!</p>
       </header>
 
       <section className="flex flex-col gap-6">
-        {/* Master Plan Progress */}
+        {/* English Every Day Progress */}
         <Card>
           <div className="flex justify-between items-center mb-4">
-            <h2 className="font-bold text-lg">Progres Master Plan (6 Bulan)</h2>
+            <h2 className="font-bold text-lg">Progres English Every Day (6 Bulan)</h2>
             <span className="text-secondary font-semibold text-sm opacity-60">
               {masterPlanProgress}% Selesai
             </span>
@@ -162,7 +182,7 @@ export default function HomePage({ onNavigate, key }: { onNavigate?: (page: any)
         </Card>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Streak */}
           <Card className="flex flex-col items-center justify-center py-4 border-2 border-orange-100 bg-orange-50/50">
             <Flame size={28} className="text-orange-500 mb-1" />
@@ -212,7 +232,7 @@ export default function HomePage({ onNavigate, key }: { onNavigate?: (page: any)
                 <div className="flex items-center gap-4">
                   <div
                     onClick={() => toggleTask(task.id)}
-                    className={`w-6 h-6 rounded-md border-2 border-mint cursor-pointer transition-colors flex items-center justify-center ${
+                    className={`w-8 h-8 md:w-6 md:h-6 rounded-md border-2 border-mint cursor-pointer transition-colors flex items-center justify-center shrink-0 ${
                       task.status === 'completed' ? 'bg-mint' : ''
                     }`}
                   >
@@ -239,7 +259,7 @@ export default function HomePage({ onNavigate, key }: { onNavigate?: (page: any)
                       else if (task.title === 'Reading') window.open('https://www.bbc.co.uk/learningenglish', '_blank');
                       else toggleTask(task.id);
                     }}
-                    className="bg-warm-white border border-[#DDD] px-4 py-2 rounded-full text-xs font-bold hover:bg-gray-50 transition-colors"
+                    className="bg-warm-white border border-[#DDD] min-h-[44px] px-5 rounded-full text-xs font-bold hover:bg-gray-50 transition-colors flex items-center justify-center"
                   >
                     Mulai
                   </button>

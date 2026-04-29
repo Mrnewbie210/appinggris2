@@ -211,7 +211,7 @@ function QuizRunner({
       <div className="flex items-center justify-between sticky top-0 bg-warm-white/90 backdrop-blur-md py-3 z-10">
         <button
           onClick={triggerFinish}
-          className="bg-white p-2 rounded-xl border border-gray-100 text-gray-400 hover:bg-gray-50 transition-colors"
+          className="bg-white min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl border border-gray-100 text-gray-400 hover:bg-gray-50 transition-colors"
         >
           <X size={20} />
         </button>

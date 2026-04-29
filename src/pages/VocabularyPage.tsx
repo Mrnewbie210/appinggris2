@@ -14,6 +14,8 @@ import FlashcardSession from '../components/vocabulary/FlashcardSession';
 import LearnMode from '../components/vocabulary/LearnMode';
 import QuizMode from '../components/vocabulary/QuizMode';
 
+let globalVocabCache: VocabWord[] | null = null;
+
 const BATCH_SIZE = 50;
 
 type VocabMode = 'dashboard' | 'flashcard' | 'learn' | 'quiz';
@@ -39,9 +41,6 @@ export default function VocabularyPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const [isAddingWord, setIsAddingWord] = useState(false);
-  const [newWord, setNewWord] = useState({ word: '', meaning_id: '', category: 'noun', level: 'A1', difficulty: 'beginner' });
-  const [isSavingWord, setIsSavingWord] = useState(false);
 
   // Trigger celebration unconditionally upon first milestone detection
   useEffect(() => {
@@ -68,34 +67,39 @@ export default function VocabularyPage() {
         setIsLoading(true);
         setError(null);
 
-        let allVocabData: any[] = [];
-        let from = 0;
-        const pageSize = 1000;
-        while (true) {
-          const { data: pageData, error: fetchError } = await supabase
-            .from('vocabulary')
-            .select('*')
-            .order('created_at', { ascending: true })
-            .range(from, from + pageSize - 1);
-          if (fetchError) throw fetchError;
-          if (!pageData || pageData.length === 0) break;
-          allVocabData = [...allVocabData, ...pageData];
-          if (pageData.length < pageSize) break;
-          from += pageSize;
-        }
-        const vocabData = allVocabData;
-
-        console.log(`DEBUG VOCAB FETCH: Received ${vocabData?.length || 0} rows from Supabase 'vocabulary' table.`);
-
         let sorted: VocabWord[] = [];
-        if (vocabData) {
+
+        if (globalVocabCache) {
+          sorted = globalVocabCache;
+          setAllWords(sorted);
+        } else {
+          let allVocabData: any[] = [];
+          let from = 0;
+          const pageSize = 1000;
+          while (true) {
+            const { data: pageData, error: fetchError } = await supabase
+              .from('vocabulary')
+              .select('*')
+              .order('created_at', { ascending: true })
+              .range(from, from + pageSize - 1);
+            if (fetchError) throw fetchError;
+            if (!pageData || pageData.length === 0) break;
+            allVocabData = [...allVocabData, ...pageData];
+            if (pageData.length < pageSize) break;
+            from += pageSize;
+          }
+
+          console.log(`DEBUG VOCAB FETCH: Received ${allVocabData.length} rows from Supabase 'vocabulary' table.`);
+
           const orderConfig: Record<string, number> = { A1: 1, A2: 2, B1: 3, B2: 4, C1: 5 };
-          sorted = (vocabData as VocabWord[]).sort((a, b) => {
+          sorted = allVocabData.sort((a, b) => {
             if (orderConfig[a.level] !== orderConfig[b.level]) {
               return (orderConfig[a.level] || 99) - (orderConfig[b.level] || 99);
             }
             return a.word.localeCompare(b.word);
           });
+          
+          globalVocabCache = sorted;
           setAllWords(sorted);
         }
 
@@ -215,50 +219,6 @@ export default function VocabularyPage() {
 
   const selectedBatch = batches[selectedBatchIndex];
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    window.location.reload();
-  };
-
-  const handleAddWord = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSavingWord(true);
-    try {
-      const { data: userData } = await getActiveUser();
-      const payload: any = {
-        word: newWord.word.trim(),
-        meaning_id: newWord.meaning_id.trim(),
-        category: newWord.category,
-        level: newWord.level,
-        difficulty: newWord.difficulty,
-        pronunciation: '',
-        meaning_en: '',
-        example_sentence: '',
-        example_translation: '',
-        tags: []
-      };
-
-      const { data, error } = await supabase.from('vocabulary').insert(payload).select().single();
-      if (error) throw error;
-
-      if (data) {
-        setAllWords(prev => [...prev, data as VocabWord]);
-        setBatches(prev => {
-          const newB = [...prev];
-          if (newB[selectedBatchIndex]) {
-            newB[selectedBatchIndex].words = [...newB[selectedBatchIndex].words, data as VocabWord];
-          }
-          return newB;
-        });
-        setNewWord({ word: '', meaning_id: '', category: 'noun', level: 'A1', difficulty: 'beginner' });
-        setIsAddingWord(false);
-      }
-    } catch (err: any) {
-      alert(`Gagal menyimpan kata: ${err.message}`);
-    } finally {
-      setIsSavingWord(false);
-    }
-  };
 
   const handleExitMode = () => setMode('dashboard');
 
@@ -323,7 +283,7 @@ export default function VocabularyPage() {
       className="flex flex-col gap-8 pb-10"
     >
 
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card className="flex flex-col items-center justify-center py-4 border-2 border-orange-100 bg-orange-50/50">
           <Flame size={28} className="text-orange-500 mb-1" />
           <span className="font-black text-xl text-charcoal">{stats.streak} <span className="text-xs font-bold text-gray-500 uppercase tracking-widest ml-0.5">Hari</span></span>
@@ -351,36 +311,8 @@ export default function VocabularyPage() {
           <h1 className="text-2xl font-bold tracking-tight mb-2">Belajar: {selectedBatch.name}</h1>
           <p className="text-gray-500 text-sm font-medium">Lanjutkan progres atau ulangi materi lama dari target ini.</p>
         </div>
-        <div className="flex gap-2">
-          <button
-            onClick={() => setIsAddingWord(!isAddingWord)}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-500 rounded-xl font-bold text-xs hover:bg-blue-100 transition-colors shadow-sm border border-blue-100"
-          >
-            <PlusCircle size={16} /> Tambah Kata
-          </button>
-          <button
-            onClick={handleLogout}
-            className="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-500 rounded-xl font-bold text-xs hover:bg-red-100 transition-colors shadow-sm border border-red-100"
-          >
-            <LogOut size={16} /> Logout
-          </button>
-        </div>
       </header>
 
-      {isAddingWord && (
-        <Card className="p-4 border-2 border-blue-100 bg-blue-50/20 mb-2">
-          <form onSubmit={handleAddWord} className="flex flex-col gap-3">
-            <h3 className="text-sm font-bold text-charcoal">Tambah Kosakata Baru (Testing)</h3>
-            <div className="grid grid-cols-2 gap-3">
-              <input type="text" required placeholder="Kata (Inggris)" value={newWord.word} onChange={e => setNewWord({ ...newWord, word: e.target.value })} className="p-2 border rounded-lg text-sm bg-white" />
-              <input type="text" required placeholder="Arti (Indonesia)" value={newWord.meaning_id} onChange={e => setNewWord({ ...newWord, meaning_id: e.target.value })} className="p-2 border rounded-lg text-sm bg-white" />
-            </div>
-            <button disabled={isSavingWord} type="submit" className="bg-blue-500 text-white font-bold py-2 rounded-lg text-sm hover:bg-blue-600 transition-colors disabled:opacity-50">
-              {isSavingWord ? 'Menyimpan...' : 'Simpan Kata ke Batch Aktif'}
-            </button>
-          </form>
-        </Card>
-      )}
 
       <div className="flex flex-col gap-4 relative">
         <div className="absolute -top-3 left-4 bg-mint text-white text-[10px] font-black px-2 py-0.5 rounded uppercase tracking-widest z-10">
@@ -388,7 +320,7 @@ export default function VocabularyPage() {
         </div>
         <Card className="p-6 border-2 border-mint/20 flex flex-col gap-6 pt-8">
 
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <button
               onClick={() => setMode('flashcard')}
               className="flex flex-col items-center justify-center gap-3 p-4 rounded-2xl border-2 border-gray-100 hover:border-mint hover:bg-mint/5 transition-all text-charcoal"

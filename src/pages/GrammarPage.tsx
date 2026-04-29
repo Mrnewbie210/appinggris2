@@ -4,6 +4,139 @@ import { Play, ArrowLeft, CheckCircle2, Video } from 'lucide-react';
 import { Card } from '../components/ui/Card';
 import { grammarCurriculum, GrammarLesson } from '../lib/grammarData';
 
+const MiniExercise = ({ lesson }: { lesson: GrammarLesson }) => {
+  const [answers, setAnswers] = useState<Record<number, number>>({});
+  const [isRetaking, setIsRetaking] = useState(false);
+  const [showScore, setShowScore] = useState(false);
+  
+  const storageKey = `grammar_exercise_${lesson.id}_score`;
+  const savedScore = localStorage.getItem(storageKey);
+  
+  const exercises = lesson.exercises || [];
+  
+  if (exercises.length === 0) return null;
+
+  if (savedScore && !isRetaking && !showScore) {
+    return (
+      <Card className="mt-2 p-6 border-2 border-mint/30 bg-mint/5 flex flex-col items-center">
+        <h3 className="font-bold text-lg text-charcoal mb-2">📝 Mini Exercise</h3>
+        <p className="text-sm font-medium text-gray-600 mb-4">Skor Kuis Sebelumnya: {savedScore}/{exercises.length}</p>
+        <button 
+          onClick={() => {
+            setIsRetaking(true);
+            setAnswers({});
+          }}
+          className="px-6 py-2 bg-white border-2 border-mint text-mint rounded-xl font-bold hover:bg-mint hover:text-white transition-colors"
+        >
+          Ulangi Kuis
+        </button>
+      </Card>
+    );
+  }
+
+  const handleSelect = (qIdx: number, oIdx: number) => {
+    if (showScore) return;
+    if (answers[qIdx] !== undefined) return;
+    setAnswers(prev => ({ ...prev, [qIdx]: oIdx }));
+  };
+
+  const calculateScore = () => {
+    let s = 0;
+    exercises.forEach((ex, idx) => {
+      if (answers[idx] === ex.correct) s++;
+    });
+    return s;
+  };
+
+  const handleFinish = () => {
+    const s = calculateScore();
+    localStorage.setItem(storageKey, s.toString());
+    setShowScore(true);
+    setIsRetaking(false);
+  };
+
+  const allAnswered = Object.keys(answers).length === exercises.length;
+
+  return (
+    <div className="mt-8 flex flex-col gap-6">
+      <h3 className="font-bold text-xl text-charcoal flex items-center gap-2">
+        <span>📝</span> Mini Exercise
+      </h3>
+      
+      {exercises.map((ex, qIdx) => {
+        const isAnswered = answers[qIdx] !== undefined;
+        const isCorrect = answers[qIdx] === ex.correct;
+        
+        return (
+          <Card key={qIdx} className="p-6 border-2 border-gray-100 flex flex-col gap-4">
+            <p className="font-bold text-charcoal">{qIdx + 1}. {ex.question}</p>
+            <div className="flex flex-col gap-2">
+              {ex.options.map((opt, oIdx) => {
+                let btnClass = "p-3 rounded-xl border-2 text-left font-medium transition-all ";
+                if (!isAnswered) {
+                  btnClass += "border-gray-100 hover:border-mint hover:bg-mint/5 text-gray-600";
+                } else {
+                  if (oIdx === ex.correct) {
+                    btnClass += "border-mint bg-mint/10 text-mint";
+                  } else if (oIdx === answers[qIdx]) {
+                    btnClass += "border-red-400 bg-red-50 text-red-500";
+                  } else {
+                    btnClass += "border-gray-100 opacity-50";
+                  }
+                }
+                
+                return (
+                  <button 
+                    key={oIdx} 
+                    onClick={() => handleSelect(qIdx, oIdx)}
+                    disabled={isAnswered}
+                    className={btnClass}
+                  >
+                    {opt}
+                  </button>
+                );
+              })}
+            </div>
+            
+            {isAnswered && (
+              <div className={`mt-2 p-4 rounded-xl text-sm font-medium ${isCorrect ? 'bg-mint/10 text-mint' : 'bg-red-50 text-red-500'}`}>
+                <div className="font-bold mb-1">{isCorrect ? 'Benar!' : 'Kurang Tepat'}</div>
+                {ex.explanation}
+              </div>
+            )}
+          </Card>
+        );
+      })}
+
+      {allAnswered && !showScore && (
+         <button 
+           onClick={handleFinish}
+           className="py-4 bg-mint text-white rounded-2xl font-black text-lg hover:bg-opacity-90 transition-all shadow-lg shadow-mint/20 mt-2"
+         >
+           Selesai & Simpan Skor
+         </button>
+      )}
+
+      {showScore && (
+         <Card className="p-6 border-2 border-mint bg-mint/5 flex flex-col items-center">
+            <h4 className="font-black text-2xl text-charcoal mb-2">Kuis Selesai! 🎉</h4>
+            <p className="text-lg font-bold text-mint mb-6">Skor: {calculateScore()} / {exercises.length}</p>
+            <button 
+              onClick={() => {
+                setIsRetaking(true);
+                setAnswers({});
+                setShowScore(false);
+              }}
+              className="px-6 py-2 bg-white border-2 border-mint text-mint rounded-xl font-bold hover:bg-mint hover:text-white transition-colors"
+            >
+              Ulangi Kuis
+            </button>
+         </Card>
+      )}
+    </div>
+  );
+};
+
 export default function GrammarPage() {
   const [selectedLesson, setSelectedLesson] = useState<GrammarLesson | null>(null);
   const [completedLessons, setCompletedLessons] = useState<number[]>([]);
@@ -87,8 +220,7 @@ export default function GrammarPage() {
             {selectedLesson.video_url ? (
               <iframe
                 src={`${getYoutubeEmbed(selectedLesson.video_url)}?rel=0&autoplay=1`}
-                className="w-full rounded-b-none"
-                style={{ aspectRatio: '16/9' }}
+                className="w-full aspect-video rounded-b-none"
                 allowFullScreen
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               />
@@ -117,6 +249,9 @@ export default function GrammarPage() {
             )}
           </div>
         </Card>
+
+        {/* Mini Exercise Section */}
+        <MiniExercise lesson={selectedLesson} />
       </motion.div>
     );
   }
